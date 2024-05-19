@@ -1,0 +1,256 @@
+1. We have created a new branch authentication.
+
+2. In VS, we have added a new column in Employee.cs
+   public string Password { get; set; }
+
+3. In tools -> nuget Packet Manager -> package manager console.
+
+4. In console ,
+   Add-Migration
+   Name : add-password-col 
+
+   and then build it by pressing enter
+
+   Then 
+   update-Database
+   to add the column in the db.
+
+5. Then open the db and then 
+   run 
+   SELECT TOP (1000) *
+  FROM [EmployeeDB].[dbo].[Employees]
+ 
+6. Right click dbo.Employee and edit top 200 rows and manually add the password values in the password column and then save it
+
+7. From NugetSolution we install 
+        Microsoft.AspNetCore.Authentication.JwtBearer.
+        System.IdentityModel.Tokens.Jwt
+
+8. I have added in appsettings.json,
+   "Jwt": {
+  "Key": "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJSdXBhbVBhbCIsIlVzZXJuYW1lIjoicnVwYW0wNyIsImV4cCI6MTcxMTAwMzU0MywiaWF0IjoxNzExMDAzNTQzfQ.xXxB3DCEdRAmLgDlLDlsrK1wm802m8BU9wbSqZI4bmQ",
+  "Issuer": "RupamPal"
+}
+
+9. In crud-dotnet-api we have created a folder Model. In model we have created a file JwtOption.cs 
+   In JwtOption.cs we have,
+
+   namespace crud_dotnet_api.Model
+{
+    public class JwtOption
+    {
+        public string Key { get; set; }
+
+        public string Issuer { get; set;  }
+    }
+}
+
+10. In Program.cs we have to register the JwtOption.To register it we have to register it before the build.
+
+builder.Services.Configure<JwtOption>(builder.Configuration.GetSection("Jwt"));
+
+11. In Program.cs to register authentication we use 
+
+builder.Services.AddAuthentication(x =>
+{
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(o =>
+{
+    o.RequireHttpsMetadata = false;
+    o.SaveToken = true;
+    o.TokenValidationParameters = new TokenValidationParameters()
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("key")),
+        ValidateIssuer = true,
+        ValidateAudience = false,
+    };
+}
+);
+
+12. In program.cs we use 
+app.UseAuthentication();
+before authroization.
+
+And get the key 
+var key = builder.Configuration.GetSection("Jwt:Key").Get<string>();
+
+13. In Controller , we make the AuthController.cs controller.
+
+14. In model, we create LoginDto where we create a model that will contain email,password.
+
+   public class LoginDto
+   {
+       public string Email { get; set; }
+
+       public string Password { get; set; }
+   }
+
+15. In AuthController.cs, we have dded a post function Login that will take the model LoginDto from body.
+[HttpPost("login")]
+public async Task<ActionResult> Login([FromBody] LoginDto model)
+{   
+    //validate email and password
+    var token = "";
+    return Ok(token);
+}
+
+16. In EmployeeRepository.cs we have added a function GetEmployeeByEmail where we take email as input and return back the employee whose email is matched.
+
+ public async Task<Employee> GetEmployeeByEmail(string email)
+ {
+     return await _appDbContext.Employees.Where(x => x.Email == email).FirstOrDefaultAsync();
+ }
+
+17. In AuthController.cs we write the Login function. In this function we validate the email and password and pass the response as per the condition.
+We also generate the token for the user.
+
+ 
+        [HttpPost("login")]
+        public async Task<ActionResult> Login([FromBody] LoginDto model)
+        {   
+            var employee = await _employeeRepository.GetEmployeeByEmail(model.Email);
+            if(employee == null)
+            {
+                return BadRequest(new { error = "Email does not exist" });
+            }
+
+            if(employee.Password != model.Password) {
+            return BadRequest(new {error = "email/password is incorrect"});
+            }
+
+            var jwtKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_options.Key));
+            var credentials = new SigningCredentials(jwtKey,SecurityAlgorithms.HmacSha256);
+            List<Claim> claims = new List<Claim>()
+            {
+                new Claim("Email",model.Email)
+            };
+            var stoken = new JwtSecurityToken(_options.Key,_options.Issuer,null,expires:DateTime.Now,signingCredentials:credentials);
+            var token = new JwtSecurityTokenHandler().WriteToken(stoken);
+
+
+            
+            return Ok( new { token =token});
+        }
+
+18. In VS , in program.cs we add this function to add token to the .net core in swagger.
+
+builder.Services.AddSwaggerGen(
+    c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo { Title = "Test01", Version = "v1" });
+
+        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.ApiKey,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "JWT Authorization header using the Bearer scheme."
+
+        });
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                          new OpenApiSecurityScheme
+                          {
+                              Reference = new OpenApiReference
+                              {
+                                  Type = ReferenceType.SecurityScheme,
+                                  Id = "Bearer"
+                              }
+                          },
+                         new string[] {}
+                    }
+                });
+    });
+
+19. In program.cs we have made changes in this 2  lines.
+     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(key)),
+     ValidateIssuer = false,
+
+20. Build the code, if we try use the get api without autorize token we will get a 401 error code.
+Then we have login with correct credentials . It gives the response the bearer token .Then in authorize We put Bearer token for autorization.
+If we try now the get api we will get all the values as response.
+
+21.In VS Code, We have created a login component in auth folder under app .
+
+22.In app-routing.module.ts we have added route for the login component
+   {
+    path:"login",
+    component:LoginComponent
+  },
+
+23.In app.module.ts , we have added MatCardModule in app.module.ts .
+
+24.In login.component.ts  we have injected the FormBuilder and grouped the form builder that will contain email and password.
+
+   constructor(private formBuilder:FormBuilder){}
+
+  loginForm = this.formBuilder.group({
+    email:['', [Validators.required]],
+    password:['', [Validators.required]]
+  })
+
+25. In login.component.html we have created the login form 
+
+26. In http.service.ts, we create a login function containing email and password 
+    
+public login(email:string,password:string) {
+    return this.http.post<{token:string}>(this.apiUrl + '/api/Auth/login', {email:email,password:password});
+  }
+
+27. In login.component.html we have a function on login button 
+<button mat-raised-button color="primary" (click)="onLogin()" >Login</button>
+
+28. In login.component.ts we injected httpService and then wrote a onLogin() where we use the http to call the login function.
+
+  public onLogin(){
+    const email = this.loginForm.value.email!;
+    const password = this.loginForm.value.password!;
+
+    this.httpService.login(email,password).subscribe((result)=>console.log(result));
+    
+  }
+
+29. In login.component.ts we store the token in localStorage and redirect to the home page.For that we have injected router in the ts file.
+
+  public onLogin(){
+    const email = this.loginForm.value.email!;
+    const password = this.loginForm.value.password!;
+
+    this.httpService.login(email,password).subscribe((result)=>{
+      console.log(result);
+      localStorage.setItem('token',result.token);
+      this.router.navigateByUrl('/');
+    });
+    
+  }
+
+30. We create a token interceptor in token-http-intercepter.ts to set the header
+
+import { HttpInterceptorFn } from "@angular/common/http";
+
+export const tokenHttpInterceptor : HttpInterceptorFn = (req, next) => { 
+    const token = localStorage.getItem('token');
+    console.log("Interceptor token ", token);
+    req = req.clone(
+       { setHeaders : {
+            Authorization: `Bearer ${token}`,
+            // "Authorization":"Bearer " +token
+        }}
+    );
+    return next(req);
+}
+
+31. In app.module.ts , we have added 
+ providers: [
+    provideHttpClient(withInterceptors([tokenHttpInterceptor])),
+  ],
+
+32.
+
+
+

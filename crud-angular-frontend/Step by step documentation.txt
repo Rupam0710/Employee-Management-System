@@ -1,0 +1,590 @@
+1.Create angular application using ng new fileName in cmd.
+2.Add routing to yes.
+3.Add styles to scss.You can select any.
+4.Open the code in vs code after creation by typing code . in cmd.
+
+
+
+5. Add Angular Material by typing - ng add @angular/material in vs code terminal
+   ? Choose a prebuilt theme name, or "custom" for a custom theme: Indigo/Pink        [ Preview: https://material.angular.io?theme=indigo-pink ]
+   ? Set up global Angular Material typography styles? Yes  
+   ? Include the Angular animations module? Include and enable animations
+
+6. Add tailwind css from documentation by using
+
+   npm install -D tailwindcss postcss autoprefixer
+   npx tailwindcss init
+
+7. In tailwind.config.js - add 
+   /** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/**/*.{html,ts}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+
+8. In style.scss add
+   
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+9.AImport MatIconModule,
+    MatButtonModule,
+    MatToolbarModule in app.module.ts and in imports array.
+
+10.In app.component.html - Copy paste the mattoolbar from angular material and make the changes.
+
+11. Add class="mr-4" in button and in mattoolbar add color = "primary".
+
+12. Create a component in components folder by ng g c components/employee-list.
+
+13. In routes array add path and components in routes: Routes 
+
+   export const routes: Routes = [
+  {
+    path:"",
+    component:EmployeeListComponent,
+  },
+  {
+    path:"/employee-list",
+    component:EmployeeListComponent,
+  },
+];
+
+14. Create the backend by opening the visual studio.
+    Create a new project and select asp.net core web api as template and create the backend .
+
+15. Delete weatherForecastController.cs from controllers and WeatherForecast.cs files.
+
+16. Right click on the crud-dotnet-api and click manage extensions and then 
+   install ef core , ef core sql,ef core tools.
+
+17. Create a folder data in crud-dotnet-api and under it create a file employee.cs
+
+18. In employee.cs create columns for id,name,email,phone,age,salary.
+
+19. In Data, we create another file AppDbContext.
+    in the file we have initialized the class ApDbContext to DbContext . Then we use a constructor AppDbContext containing dbcontextoptions of generic type
+    AppDbContext options of type base options.
+    Then we create a DBset of Type generic class Employee.
+
+20. In PROGRAM.CS we register the Adddbcontext of type appdbcontext and then we use usesqlserver to pass the connection string.
+
+21. In appsettings.json we pass the connectionstrings as defaultconnection 
+"ConnectionStrings": {
+  "DefaultConnection": "Server=INDBANL314;Database=EmployeeDB;Trusted_Connection=SSPI;Encrypt=false;TrustServerCertification=true"
+}
+
+22. We created a file in data EmployeeRepository to manipulate the data.
+    We initialized _appDbContext of type AppDbContext. 
+   Then we use the constructor to assign the value of appDbContext to _appDbContext.
+   We called our first api to addEmployee(Employee employee) to set the value of employee and then save the changes.
+ 
+ private readonly AppDbContext _appDbContext;
+
+ public EmployeeRepository(AppDbContext appDbContext)
+ {
+     _appDbContext = appDbContext;
+ }
+
+   public async Task AddEmployee(Employee employee)
+{
+    await _appDbContext.Set<Employee>().AddAsync(employee);
+    await _appDbContext.SaveChangesAsync();
+}
+
+23.We create a controller EmployeeController in controllers.Right click on the controllers and then click add then click 
+add new scaffolded item and click api -> api controller - empty and then write the name of the file and click on add.
+This controller provides an API endpoint for adding employees to the system. 
+It follows RESTful conventions by using HTTP POST requests and adheres to the MVC pattern commonly used in ASP.NET Core applications.
+
+ private readonly EmployeeRepository _employeeRepository;
+
+ public EmployeeController(EmployeeRepository employeeRepository)
+ {
+     _employeeRepository = employeeRepository;
+ }
+
+ [HttpPost]
+ public async Task<ActionResult> AddEmployee([FromBody] Employee model)
+ {
+     await _employeeRepository.AddEmployee(model);
+     return Ok();
+ }
+
+24. Click on tools then NuGet Package Manager and then Package Manager Console . In console write Add-Migration 'Initial setup'.
+The build was getting failed so in program.cs you have to change
+builder.Services.AddDbContext<AppDbContext>(option => option.UseSqlServer(builder.Configuration["ConnectionStrings:DefaultConnection"]));
+
+and the build gets done.
+
+25.In package manager console type Update-Database to   create    the db.
+In Sql Server, right click on the  server name and and click on connect to server and then click on options and then connection properties and select trust server 
+certificate.
+
+ "ConnectionStrings": {
+   "DefaultConnection": "Server=INDBANL314\\SQLEXPRESS;Database=EmployeeDB;Trusted_Connection=SSPI;Encrypt=false;TrustServerCertificate=true"
+ }
+
+The database will be created.
+
+26. If we go to the databases we see EmployeeDB been created.The table is formed under which dbo.Employees the column is formed that contains the row name.
+
+27. We will run the vs file by clicking on https and the swagger localhost will open.
+
+28. We have to register the EmployeeRepository in program.cs by
+builder.Services.AddScoped<EmployeeRepository>();
+
+29. Then refresh your project, run the project and click on the https.The swagger ui will open in localhost and then we have the req parameters and
+then after filing the details we can execute the api.
+
+30. We open the Sql server management and then right click on dbo.employees and select top 1000.
+When the query opens we select all and then execute and we can see the entered value using the add api(post).
+
+31.In EmployeeRepository.cs, We write a async Function getallemployeeAsync() to get the list of all employees.It returns from appDbContext the list 
+of employees async.
+
+ public async Task<List<Employee>> GetAllEmployeeAsync()
+ {
+    return  await _appDbContext.Employees.ToListAsync();
+ }
+
+32. In EmployeeController.cs we use the get function(async) GetEmployeeList() , which will contain the employeeList that will contain the getAllEmployeeAsync()
+from _employeeRepository.Then we will return Ok(employeeList)
+
+ [HttpGet]
+public async Task<ActionResult> GetEmployeeList()
+{
+    var employeeList = await _employeeRepository.GetAllEmployeeAsync();
+    return Ok(employeeList);
+}
+
+33.Then we click on the refresh build butto and click on the https option to open the sswagger and run the api.
+
+34.In Swagger we go on testing the Api.
+
+35.In EmployeeRepository.cs we use the function(async) GetEmployeeById(int id) that returns the element with that id.
+
+ public async Task<Employee> GetEmployeeById(int id)
+ {
+     return await _appDbContext.Employees.FindAsync(id);
+ }
+
+36.In EmployeeController.cs we write a function GetEmployeeById where we pass the id fromRoute and it contains the employee value of the given id.
+We return that value.
+
+ [HttpGet("{id}")]
+ public async Task<ActionResult> GetEmployeeById([FromRoute]int id)
+ {
+     var employee = await _employeeRepository.GetEmployeeById(id);
+     return Ok(employee);
+ }
+
+37. Then we build and run the https and test the api in swagger by putting in the desired id.
+
+38. In employeeRepository.cs, We write a function UpdateEmployee getting parameters like id and employeee model .First it finds element by id .iF employee is not present we throw an exception .
+If present we update the name,phone,salary,age and save the context in _appDbContext.
+
+ public async Task UpdateEmployee(int id,Employee model)
+{
+    var employeee = await _appDbContext.Employees.FindAsync(id);
+    if(employeee == null)
+    {
+        throw new Exception("Employee not found");
+    }
+
+    employeee.Name = model.Name;
+    employeee.Phone = model.Phone;
+    employeee.Age = model.Age;
+    employeee.Salary = model.Salary;
+    await _appDbContext.SaveChangesAsync();
+}
+
+39. In employeeController.cs , we write a put api UpdateEmployee where we get the id from the route and from body we get the employee model.
+   We use the employeeRepository to update the employees by passing id and model. and finally return ok.
+
+  
+        [HttpPut("{id}")]
+        public async Task<ActionResult> UpdateEmployee([FromRoute] int id, [FromBody] Employee model)
+        {
+            await _employeeRepository.UpdateEmployee(id,model);
+            return Ok();
+        }
+
+40. Then we build and run the https and test the api in swagger by putting in the desired id.
+
+41.  In employeeRepository.cs, We write a function DeleteEmployeeAsync getting parameters like id  .First it finds element by id .iF employee is not present we throw an exception .
+If present we remove the employee and save the context in _appDbContext.
+
+ public async Task DeleteEmployeeAsync(int id)
+{
+    var employeee = await _appDbContext.Employees.FindAsync(id);
+    if (employeee == null)
+    {
+        throw new Exception("Employee not found");
+    }
+
+    _appDbContext.Employees.Remove(employeee);
+    await _appDbContext.SaveChangesAsync();
+}
+
+42. In employeeController.cs , we write a put api DeleteEmployee where we get the id from the route.
+   We use the employeeRepository to delete the employees by passing id. and finally return ok.
+
+  
+         [HttpDelete("{id}")]
+ public async Task<ActionResult> DeleteEmployee([FromRoute] int id)
+ {
+     await _employeeRepository.DeleteEmployeeAsync(id);
+     return Ok();
+ }
+
+43. Then we build and run the https and test the api in swagger by putting in the desired id.
+
+44. We also check the database if the changes are implemented in the db.  
+    We open the EmployeeDB from the databases and then we opne tables from EmployeeDB and from that we open dbo.Employees and then write the query that
+    
+   SELECT * from Employees 
+   to view all the elements from the db.
+
+45. In VS CODE , we create interface folder,employee.ts under app. It contains the model.
+    
+export interface IEmployee{
+    id: number,
+    name: string,
+    email: string,
+    phone: string,
+    age: number,
+    salary: number
+  }
+
+46. In employee-list.component.ts , we create employeeList of type Iemployee[] and initialize to [].
+
+47. We create a HttpService under app/services.
+    We have the apiUrl as 'https://localhost:7174'
+then we inject HttpClient in http.
+
+   We then write a function to getAllEmployee().
+
+   export class HttpService {
+  
+  apiUrl = 'https://localhost:7174';
+  http = inject(HttpClient);
+  constructor() { }
+
+  getAllEmployee(){
+    return this.http.get<IEmployee[]>(this.apiUrl + '/api/Employee');
+  }
+}
+
+
+48. In app.module.ts under imports we import HttpClientModule.
+
+49. In employee-list.comonent.ts we inject the httpService.
+    We call ngOnInIt life cycle to getallemployee from our database in to the employee-list component.
+
+    
+    export class EmployeeListComponent implements OnInit {
+      employeeList : IEmployee[]=[];
+      httpService = inject(HttpService);
+      ngOnInit(): void {
+          this.httpService.getAllEmployee().subscribe((result)=>{
+            this.employeeList = result;
+            console.log(this.employeeList);
+            
+          })
+
+      }
+
+
+}
+
+50. In VS , we open the program.cs and we add the 
+app.UseCors(option => option.AllowAnyOrigin());
+
+and build and run the program.After this our cors issue is fixed and we are able to fetch the data from the db to frontend.
+
+51. In app.module.ts , we import MatTableModule and in imports we include MatTableModule.
+
+52. In employee-list.component.html we make columns for id,name,email,pone,salary,age. In datasource we provide employeeList.
+
+53. In employee-list.component.ts ,we 
+  displayedColumns:string[] = [
+        'id',
+        'name',
+        'email',
+        'phone',
+        'age',
+      'salary',
+      ];
+
+54. In app.component.html , we put the router-outlet in 
+
+<div class=" w-full px-40 py-10">
+
+  <router-outlet></router-outlet>
+  
+</div>
+
+55. In employee-list.component.html ,
+We have put entire table in a <div  class="mat-elevation-z8 w-full">
+
+and inside it we have put a button Add Eployee in a div.
+
+56. We have created a component inside the component folder , employee-form.
+
+57. In app-routing.module.ts , we have created a path  
+ {
+    path:"create-employee",
+    component:EmployeeFormComponent
+  },
+
+58. In employee-list.component.html we add routerLink to Add Employee form
+
+<button routerLink="create-employee" mat-raised-button color="primary">Add Employee</button>
+
+59. In app.component.html , we add routerLink to home icon.
+
+ <button  routerLink="/" mat-icon-button class="mr-4" >
+    <mat-icon>home</mat-icon>
+  </button>
+
+60. In app.module.ts we imported the MatInputModule.
+
+61. In employee-form.component.html , inside the div we have a heading and then we have a form .Inside it there are separate div for all the input values.
+
+62. In employee-form.component.html, we put the whole div,inside another div.The inside div will have a class = "shadow p-4" and outer div will have a class = "p-8 mt-4".
+    At the end of the inside dive we will have a button for saving the details.
+
+63. In app.module.ts we import FormsModule and ReactiveFormsModule.
+
+64. In employee-form.component.ts , we inject the formsBuilder then use it to make the employeeForm.
+    constructor(private formsBuilder:FormBuilder){}
+
+   employeeForm = this.formsBuilder.group({
+    name:['', Validators.required],
+    email:['', Validators.required],
+    phone:['', Validators.required],
+    salary:[0, Validators.required],
+    age:[0, Validators.required],
+    
+   })
+
+65. In employee-form.component.html we use the form group to bind the form to employeeForm and then put a (ngSubmit)="save()" on it.On all the input fields
+we put formControlName of that specific field .For ex:
+
+<form [formGroup]="employeeForm" (ngSubmit)="save()">
+
+ <input type="text" matInput placeholder="Ex. Rupam Pal" formControlName="name" />
+
+66. We write a function save in employee-form.component.ts to console the emploeeform.value. 
+
+public save(){
+    console.log(this.employeeForm.value);
+    
+   }
+
+67. In employee-form.component.html we add a disabled option on save button that save button will be disabled till the employee form is not valid...
+
+<div class="flex justify-center">
+              <button mat-raised-button color="primary" [disabled]="!employeeForm.valid">Save</button>
+          </div>
+
+68. In employee-form.component.html we have set the validator of the email 
+ email:['',[Validators.required, Validators.email]],
+
+69. In employee.ts , we make the id otional.
+  id?: number,
+
+70. In http.service.ts we make a function createEmployee to add the employee list.
+
+public createEmployee(employee:IEmployee){
+    return this.http.post<IEmployee>(this.apiUrl + '/api/Employee', employee);
+  }
+
+71. In employee-form.component.ts , in save function we have created a const employee of type Iemployee that will contain all the values of the form.
+
+Then we use the httpService to call createEMployee and pass employee to it and then subscribe to it .
+
+public save(){
+    console.log(this.employeeForm.value);
+    const employee: IEmployee = {
+      name:this.employeeForm.value.name!,
+      email:this.employeeForm.value.email!,
+      phone:this.employeeForm.value.phone!,
+      age:this.employeeForm.value.age!,
+      salary:this.employeeForm.value.salary!,
+    }
+
+    this.httpService.createEmployee(employee).subscribe(()=>{
+      console.log("employee added successfully");
+    })
+   }
+
+72. In VS ,in program.cs there is some cors issues.So to rectify the issue we have added allowAnyMethod and AllowAnyHeader in UseCors
+app.UseCors(option => option.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+
+Then build and run the VS
+
+73. In VS Code, in employee-form.component.ts we have injected router and navigate to employee-list on adding new employees.
+this.httpService.createEmployee(employee).subscribe(()=>{
+      console.log("employee added successfully");
+      this.router.navigate(['/employee-list'])
+    })
+
+74. In employee-list.component.html in Add employee-button add the absolute path of create-employee.
+<div  class="flex justify-end p-8">
+    <button routerLink="/create-employee" mat-raised-button color="primary">Add Employee</button>
+</div>
+
+75. In employee-list.component.html we added another column that will contain our action. In this action column we have the Edit button.
+It has a click option taht will contain edit function that will take the id of the element.
+
+ <ng-container matColumnDef="action">
+      <th mat-header-cell *matHeaderCellDef> Action </th>
+      <td mat-cell *matCellDef="let element">
+        <button  mat-raised-button color="primary" (click)="edit(element.id)">Edit</button>
+      </td>
+    </ng-container>
+
+76.  in employee-list.component.ts we have an edit function.
+
+public edit(id:number){
+         console.log(id);
+         
+      }
+
+in displayed columns we have added action
+
+ displayedColumns:string[] = [
+        'id',
+        'name',
+        'email',
+        'phone',
+        'age',
+        'salary',
+        'action',
+      ];
+
+77. In app.routing.module.ts we have added this path 
+  {
+    path:"employee/:id",
+    component:EmployeeFormComponent
+  },
+
+78. In employee-list.component.ts in edit function 
+
+     public edit(id:number){
+         console.log(id);
+         this.router.navigate(['/employee/' + id])
+         
+      }
+
+79. In employee-form.component.ts , we have injected route:ActivatedRoute and in ngOnit we have assigned employeeId to route id.
+
+constructor(private formsBuilder:FormBuilder,private httpService:HttpService,private router:Router,private route:ActivatedRoute){}
+   
+   employeeId!:number;
+   ngOnInit(): void {
+       this.employeeId = this.route.snapshot.params['id'];
+   }
+
+80. In employee-form.component.html , we have added ngif to both the headings
+
+<h4 *ngIf="isEdit">Edit Employee Form</h4>
+      
+        <h4 *ngIf="!isEdit">Create Employee Form</h4>
+
+81. In employee-form.component.html , we have to added ngif to buttons.
+
+<div *ngIf="!isEdit" class="flex justify-center">
+              <button mat-raised-button color="primary" [disabled]="!employeeForm.valid">Save</button>
+          </div>
+          <div *ngIf="isEdit" class="flex justify-center">
+              <button mat-raised-button color="primary" [disabled]="!employeeForm.valid">Update</button>
+          </div>
+
+82. In http.service.ts we have added a function getEmployee with id where we are passing the employee id and fetching the details of that employee.
+
+   public getEmployee(employeeId:number){
+    return this.http.get<IEmployee>(this.apiUrl + '/api/Employee/' + employeeId);
+  }
+
+83.  In employee-form.component.ts in ngOnIt we are calling the getEmployee to get the details of the employee.
+then we are patching the value of the current employee in the form and we are disabling the email as we don't want to edit the email. 
+
+ ngOnInit() {
+     this.employeeId = this.route.snapshot.params['id'];
+     if (this.employeeId) {
+       this.isEdit = true;
+       this.httpService.getEmployee(this.employeeId).subscribe((result) => {
+         console.log(result);
+         this.employeeForm.patchValue(result);
+        //  this.employeeForm.controls.email.disable();
+       });
+     }
+   }
+   save() {
+     const emp : IEmployee = this.employeeForm.getRawValue();
+     const employee: IEmployee = {
+       name: emp.name,
+       age: emp.age,
+      //  email: this.employeeForm.value.email!,
+       email: emp.email,
+       phone:emp.phone,
+       salary: emp.salary,
+     };
+
+84. in employee.ts , we have an interface 
+export interface IEmployee{
+    id?: number | null,
+    name: string | null,
+    email?: string | null,
+    phone: string | null,
+    age: number | null,
+    salary: number | null
+  }
+
+85.
+
+
+86. In employee-list.component.html we have created a button delete which gets the id.
+<button  mat-raised-button color="warn" (click)="delete(element.id)">Delete</button>
+
+87. In http.service.ts we create a deleteEmployee function that takes the id as parameter .
+  
+public deleteEmployee(employeeId: number) {
+    return this.http.delete(
+      this.apiUrl + '/api/Employee/' + employeeId);
+  }
+
+88. In employee-list.component.ts , we create a function delete that takes employee id and then call the deleteEmployee function from httpservice and console it and update the list .
+ 
+public delete(id:number){
+        this.httpService.deleteEmployee(id).subscribe(()=>{
+          console.log("deleted");
+          this.employeeList = this.employeeList.filter(x=>x.id!=id);
+          
+        })
+      }
+
+89. We install toastr by npm i ngx-toastr@16.2.0
+
+90. in styles.scss , @import 'ngx-toastr/toastr';
+in angular.json in styles paste "node_modules/ngx-toastr/toastr.css"
+
+91. import ToastrModule.forRoot(), in app.module.ts
+
+
+92. We inject private toastr:ToastrService IN BOTH employee-list and emploee-form and then use it to diplay add, delete and updated function.
+
+
+
+
+
+

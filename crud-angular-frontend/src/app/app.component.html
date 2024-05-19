@@ -1,0 +1,17 @@
+<mat-toolbar color="primary">
+  <button  routerLink="/" mat-icon-button class="mr-4" >
+    <mat-icon>home</mat-icon>
+  </button>
+  <span class="mr-15">Employee Management</span>
+  <span class="spacer"></span>
+  <button mat-flat-button color="warn" (click)="logout()" *ngIf="isLoggedIn$ | async">LogOut</button>
+  <!-- <button mat-flat-button color="warn" (click)="login()" *ngIf="isLoggedOut$ | async">LogIn</button> -->
+  <span class="example-spacer"></span>
+
+</mat-toolbar>
+
+<div class=" w-full px-40 py-10">
+
+  <router-outlet></router-outlet>
+
+</div>
